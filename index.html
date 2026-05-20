@@ -274,6 +274,38 @@ const TRAINING_WEEKS = [
 
 // ── Day1 訪談表 Modal ──
 function InterviewModal({ onClose }) {
+  const [openQ, setOpenQ] = useState(null);
+  const questions = [
+    {
+      q:"1. 目前工作狀態",
+      options:["想尋找創業機會，可全力投入","有正職，想增加額外收入","有正職，想轉換跑道","全職家管（寶媽），想增加收入","求學階段，想增加收入並累積競爭力","待業中","其他"]
+    },
+    {
+      q:"2. 過去做過什麼工作？",
+      text:"了解新人具備哪些經驗與技能，才可以因材施教。\n包含：工作職業、年資、專長興趣、休閒娛樂"
+    },
+    {
+      q:"3. 如果努力經營可以獲得很好的收入，你希望10年後完成什麼夢想或目標？",
+      text:"讓新人沒有限制地說說夢想，你會更了解你的新事業夥伴。"
+    },
+    {
+      q:"4. 12個月後希望每月淨利是多少？",
+      options:["A. 3,000–5,000元（每天30–60分鐘經營）","B. 30,000–50,000元","C. 10萬元","D. 20萬元以上"]
+    },
+    {
+      q:"5. 透過賺到這個數字，真正想達成的夢想或解決的問題？",
+      options:["買房給爸媽","買房和老公搬出婆家","買車（給誰用？為什麼？）","給小孩更好的教育與生活","自己賺錢不當伸手牌，還可以給原生家庭","維持學習與競爭力，不脫離社會","解決家裡負債","靠自己買房買車、旅遊","學生：提早累積競爭力","其他動機"]
+    },
+    {
+      q:"6. 為了達成目標……",
+      text:"1. 你願意每天花幾個小時經營？\n\n2. 遇到挫折你會怎麼面對？\n\n3. 達到目標前，你願意犧牲多少小確幸？"
+    },
+    {
+      q:"7. 是否願意實踐自己立下的承諾來完成目標？",
+      text:"「你是想要，還是一定要？」\n\n✍️ 宣示人：＿＿＿＿＿＿＿＿＿＿"
+    },
+  ];
+
   return (
     <div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
       <div className="modal" style={{maxWidth:520}}>
@@ -283,42 +315,28 @@ function InterviewModal({ onClose }) {
         </div>
 
         <div style={{fontSize:12,color:'var(--muted)',background:'var(--purple-light)',borderRadius:10,padding:'10px 14px',lineHeight:1.7}}>
-          💡 操作提醒：以「訪談與關心」方式詢問，最理想是面對面，次之視訊。新人付款後 7 天內完成。
+          💡 以「訪談與關心」方式詢問，最理想是面對面，次之視訊。新人付款後 7 天內完成。
         </div>
 
-        {[
-          {
-            q:"1. 目前工作狀態",
-            options:["想尋找創業機會，可全力投入","有正職，想增加額外收入","有正職，想轉換跑道","全職家管（寶媽），想增加收入","求學階段，想增加收入並累積競爭力","待業中","其他"]
-          },
-          { q:"2. 過去做過什麼工作？", text:"了解新人具備哪些經驗與技能，才可以因材施教。\n（工作職業、年資、專長興趣、休閒娛樂）" },
-          { q:"3. 如果努力經營可以獲得很好的收入，你希望10年後完成什麼夢想或目標？", text:"讓新人沒有限制地說說夢想" },
-          {
-            q:"4. 12個月後希望每月淨利是多少？",
-            options:["A. 3,000–5,000元（每天30–60分鐘）","B. 30,000–50,000元","C. 10萬元","D. 20萬元以上"]
-          },
-          {
-            q:"5. 透過賺到這個數字，真正想達成的夢想或解決的問題？",
-            options:["買房給爸媽","買房和老公搬出婆家","買車","給小孩更好的教育與生活","自己賺錢不當伸手牌","維持學習與競爭力","解決家裡負債","靠自己買房買車","學生：提早累積競爭力","其他動機"]
-          },
-          {
-            q:"6. 為了達成目標……",
-            text:"1. 你願意每天花幾個小時經營？\n2. 遇到挫折你會怎麼面對？\n3. 達到目標前，你願意犧牲多少小確幸？"
-          },
-          { q:"7. 是否願意實踐自己立下的承諾來完成目標？", text:"「你是想要，還是一定要？」\n\n宣示人：＿＿＿＿＿＿" },
-        ].map((item, i)=>(
+        {questions.map((item,i)=>(
           <div key={i} style={{borderRadius:12,border:'1.5px solid var(--border)',overflow:'hidden'}}>
-            <div style={{background:'linear-gradient(135deg,#F5F3FF,#EDE9FE)',padding:'10px 14px',fontSize:13,fontWeight:600,color:'var(--purple)'}}>
-              {item.q}
+            <div
+              onClick={()=>setOpenQ(openQ===i?null:i)}
+              style={{background:'linear-gradient(135deg,#F5F3FF,#EDE9FE)',padding:'12px 14px',fontSize:13,fontWeight:600,color:'var(--purple)',display:'flex',justifyContent:'space-between',alignItems:'center',cursor:'pointer'}}
+            >
+              <span style={{flex:1,paddingRight:8}}>{item.q}</span>
+              <span style={{fontSize:12,transition:'transform 0.3s',display:'inline-block',transform:openQ===i?'rotate(180deg)':'rotate(0deg)'}}>▼</span>
             </div>
-            <div style={{padding:'10px 14px'}}>
-              {item.options && item.options.map((o,oi)=>(
-                <div key={oi} style={{display:'flex',alignItems:'flex-start',gap:8,fontSize:13,color:'var(--text)',marginBottom:5,lineHeight:1.5}}>
-                  <span style={{color:'var(--purple)',flexShrink:0}}>□</span><span>{o}</span>
-                </div>
-              ))}
-              {item.text && <div style={{fontSize:13,color:'var(--muted)',lineHeight:1.8,whiteSpace:'pre-line'}}>{item.text}</div>}
-            </div>
+            {openQ===i&&(
+              <div style={{padding:'12px 14px'}}>
+                {item.options && item.options.map((o,oi)=>(
+                  <div key={oi} style={{display:'flex',alignItems:'flex-start',gap:8,fontSize:13,color:'var(--text)',marginBottom:8,lineHeight:1.6}}>
+                    <span style={{color:'var(--purple)',flexShrink:0,marginTop:1}}>□</span><span>{o}</span>
+                  </div>
+                ))}
+                {item.text && <div style={{fontSize:13,color:'var(--muted)',lineHeight:1.9,whiteSpace:'pre-line'}}>{item.text}</div>}
+              </div>
+            )}
           </div>
         ))}
 
@@ -326,7 +344,7 @@ function InterviewModal({ onClose }) {
           ⚠️ 在婕樂纖沒有不能完成的目標，只有不願意付出的努力。付出對等的努力可以獲得比原本高 3–10 倍的成就。
         </div>
 
-        <button onClick={onClose} style={{background:'linear-gradient(135deg,#7C3AED,#EC4899)',color:'white',border:'none',borderRadius:12,padding:12,fontSize:14,fontWeight:600}}>關閉</button>
+        <button onClick={onClose} style={{background:'linear-gradient(135deg,#7C3AED,#EC4899)',color:'white',border:'none',borderRadius:12,padding:12,fontSize:14,fontWeight:600,cursor:'pointer'}}>關閉</button>
       </div>
     </div>
   );
