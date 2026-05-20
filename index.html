@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Million 陪跑班</title>
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#2D1B69" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Million陪跑班" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getFirestore, collection, onSnapshot, addDoc, updateDoc, doc, serverTimestamp, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    const firebaseConfig = {
+      apiKey: "AIzaSyB0vA2rhEU3bXEalkVuTZfeKP4G",
+      authDomain: "million-team.firebaseapp.com",
+      projectId: "million-team",
+      storageBucket: "million-team.firebasestorage.app",
+      messagingSenderId: "871662568690",
+      appId: "1:871662568690:web:4599e6164a3538",
+      measurementId: "G-GCE3WBRJD6"
+    };
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    window.__db = db;
+    window.__firebase = { collection, onSnapshot, addDoc, updateDoc, doc, serverTimestamp, query, orderBy };
+    window.dispatchEvent(new Event('firebase-ready'));
+  </script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #F8F5FF; --dark: #2D1B69; --purple: #7C3AED;
+      --purple-light: #EDE9FE; --pink: #EC4899;
+      --card: #FFFFFF; --border: #E9E3FF;
+      --text: #1E1040; --muted: #7C6FA0; --subtle: #A89DC0;
+      --header-bg: #2D1B69;
+      --font-display: 'Playfair Display', serif;
+      --font-body: 'DM Sans', sans-serif;
+      --font-mono: 'DM Mono', monospace;
+    }
+    html, body { height: 100%; background: var(--bg); }
+    body { font-family: var(--font-body); color: var(--text); -webkit-font-smoothing: antialiased; }
+    button { font-family: var(--font-body); cursor: pointer; }
+    input, textarea { font-family: var(--font-body); }
+    a { text-decoration: none; }
+
+    /* Header */
+    .header { background: var(--header-bg); padding: max(28px, env(safe-area-inset-top)) 20px 0; position: sticky; top: 0; z-index: 50; }
+    .header-inner { max-width: 960px; margin: 0 auto; }
+    .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; gap: 12px; }
+    .header-title h1 { font-family: var(--font-display); font-size: 22px; color: #F3EEFF; font-weight: 700; }
+    .header-title p { color: #A78BCC; font-size: 12px; margin-top: 3px; font-family: var(--font-mono); }
+    .btn-add { background: linear-gradient(135deg, #A855F7, #EC4899); color: white; border: none; border-radius: 12px; padding: 10px 16px; font-size: 13px; font-weight: 600; white-space: nowrap; }
+    .btn-add:active { opacity: 0.85; }
+    .search-wrap { position: relative; margin-bottom: 14px; }
+    .search-icon { position: absolute; left: 13px; top: 50%; transform: translateY(-50%); font-size: 14px; }
+    .search-input { width: 100%; padding: 11px 14px 11px 38px; background: #1E1050; border: 1.5px solid #3D2A80; border-radius: 12px; color: #F3EEFF; font-size: 14px; outline: none; }
+    .search-input::placeholder { color: #6B5A90; }
+    .tabs { display: flex; overflow-x: auto; scrollbar-width: none; }
+    .tabs::-webkit-scrollbar { display: none; }
+    .tab { padding: 10px 14px; background: none; border: none; border-bottom: 2px solid transparent; color: #7B6AA0; font-family: var(--font-mono); font-size: 11px; white-space: nowrap; transition: all 0.2s; }
+    .tab.active { color: #E9D5FF; border-bottom-color: #A855F7; }
+    .tab.saved.active { color: #FCA5A5; border-bottom-color: #EC4899; }
+    .tab-spacer { flex: 1; min-width: 8px; }
+
+    /* Main */
+    .main { max-width: 960px; margin: 0 auto; padding: 20px 16px max(100px, calc(env(safe-area-inset-bottom) + 100px)); }
+
+    /* Chips */
+    .tag-strip { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
+    .chip { padding: 4px 12px; border-radius: 20px; border: 1.5px solid var(--border); background: transparent; color: var(--muted); font-size: 12px; font-family: var(--font-mono); transition: all 0.2s; }
+    .chip.active { background: var(--purple); color: white; border-color: var(--purple); }
+    .count { font-size: 12px; color: var(--subtle); font-family: var(--font-mono); margin-bottom: 14px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 14px; }
+
+    /* Resource Card */
+    .card { background: var(--card); border: 1.5px solid var(--border); border-radius: 16px; padding: 18px; display: flex; flex-direction: column; gap: 12px; transition: all 0.25s; box-shadow: 0 2px 8px rgba(124,58,237,0.06); }
+    @media (hover: hover) { .card:hover { border-color: #C4B5FD; transform: translateY(-2px); box-shadow: 0 8px 24px rgba(124,58,237,0.12); } .card:hover .edit-btn { opacity: 1; } }
+    .card-header { display: flex; justify-content: space-between; align-items: center; }
+    .card-meta { display: flex; gap: 8px; align-items: center; }
+    .type-icon { font-size: 16px; }
+    .category-badge { font-size: 11px; font-family: var(--font-mono); color: var(--purple); background: var(--purple-light); padding: 2px 8px; border-radius: 6px; }
+    .edit-btn { background: none; border: none; color: var(--subtle); font-size: 15px; padding: 2px; opacity: 0; transition: opacity 0.2s; }
+    .card-title { font-family: var(--font-display); font-size: 15px; color: var(--text); font-weight: 600; line-height: 1.3; margin-bottom: 5px; }
+    .card-desc { font-size: 13px; color: var(--muted); line-height: 1.6; }
+    .card-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+    .tag-pill { font-size: 11px; padding: 2px 8px; background: var(--purple-light); border-radius: 10px; color: var(--purple); font-family: var(--font-mono); }
+    .card-footer { display: flex; justify-content: space-between; align-items: center; padding-top: 12px; border-top: 1px solid #F0EBFF; }
+    .author { display: flex; align-items: center; gap: 8px; }
+    .avatar { width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; font-family: var(--font-mono); flex-shrink: 0; }
+    .author-name { font-size: 12px; color: var(--subtle); }
+    .card-actions { display: flex; gap: 8px; align-items: center; }
+    .link-btn { color: var(--purple); font-size: 12px; font-family: var(--font-mono); border-bottom: 1px solid #C4B5FD; }
+    .like-btn, .save-btn { background: none; border: none; font-size: 12px; font-family: var(--font-mono); transition: color 0.2s; padding: 4px; }
+    .like-btn { color: var(--subtle); display: flex; align-items: center; gap: 3px; }
+    .like-btn.liked { color: #EC4899; }
+    .save-btn { color: var(--subtle); font-size: 15px; }
+    .save-btn.saved { color: #A855F7; }
+
+    /* Checkin */
+    .checkin-card { background: linear-gradient(135deg, #2D1B69, #4C1D95); border: none; border-radius: 16px; padding: 20px; color: white; display: flex; flex-direction: column; gap: 12px; box-shadow: 0 4px 20px rgba(124,58,237,0.3); }
+    .checkin-title { font-family: var(--font-display); font-size: 16px; font-weight: 600; }
+    .checkin-desc { font-size: 13px; color: #C4B5FD; line-height: 1.6; }
+    .checkin-streak { display: flex; align-items: center; gap: 8px; }
+    .streak-num { font-size: 28px; font-weight: 700; font-family: var(--font-mono); color: #FCD34D; }
+    .streak-label { font-size: 12px; color: #C4B5FD; }
+    .btn-checkin { background: linear-gradient(135deg, #A855F7, #EC4899); color: white; border: none; border-radius: 12px; padding: 12px; font-size: 14px; font-weight: 600; width: 100%; }
+    .btn-checkin:disabled { opacity: 0.5; cursor: not-allowed; }
+    .checkin-dots { display: flex; gap: 6px; flex-wrap: wrap; }
+    .dot { width: 20px; height: 20px; border-radius: 50%; background: rgba(255,255,255,0.15); display: flex; align-items: center; justify-content: center; font-size: 10px; }
+    .dot.done { background: #A855F7; }
+
+    /* Empty */
+    .empty { text-align: center; padding: 64px 0; color: var(--subtle); font-family: var(--font-mono); }
+    .empty-icon { font-size: 40px; margin-bottom: 12px; }
+
+    /* Modal */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(29,16,64,0.5); display: flex; align-items: center; justify-content: center; z-index: 100; backdrop-filter: blur(4px); padding: 16px; }
+    .modal { background: #FEFCFF; border-radius: 20px; padding: 28px; width: 100%; max-width: 460px; display: flex; flex-direction: column; gap: 16px; border: 1.5px solid var(--border); box-shadow: 0 20px 60px rgba(124,58,237,0.15); max-height: 90vh; overflow-y: auto; }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; }
+    .modal-title { font-family: var(--font-display); font-size: 20px; color: var(--text); }
+    .modal-close { background: none; border: none; font-size: 22px; color: var(--subtle); }
+    .field label { display: block; font-size: 12px; font-family: var(--font-mono); color: var(--muted); margin-bottom: 6px; }
+    .field input, .field textarea { width: 100%; padding: 10px 14px; border: 1.5px solid #DDD6FE; border-radius: 10px; font-size: 14px; color: var(--text); background: #FAFAFF; outline: none; resize: none; }
+    .field textarea { min-height: 70px; }
+    .modal-cats { display: flex; gap: 8px; flex-wrap: wrap; }
+    .modal-tags { display: flex; gap: 6px; flex-wrap: wrap; }
+    .modal-actions { display: flex; gap: 10px; margin-top: 4px; }
+    .btn-cancel { flex: 1; padding: 12px; border: 1.5px solid #DDD6FE; border-radius: 12px; background: transparent; color: var(--muted); font-size: 14px; }
+    .btn-save { flex: 2; padding: 12px; border: none; border-radius: 12px; color: white; font-size: 14px; font-weight: 600; }
+    .btn-save.ready { background: linear-gradient(135deg, #7C3AED, #EC4899); }
+    .btn-save.disabled { background: #C4B5FD; cursor: not-allowed; }
+
+    /* AI 浮動按鈕 */
+    .ai-fab { position: fixed; bottom: max(80px, calc(env(safe-area-inset-bottom) + 80px)); right: 20px; z-index: 90; width: 52px; height: 52px; border-radius: 50%; background: linear-gradient(135deg, #7C3AED, #EC4899); border: none; color: white; font-size: 22px; box-shadow: 0 4px 20px rgba(124,58,237,0.4); display: flex; align-items: center; justify-content: center; }
+    .ai-fab:active { transform: scale(0.95); }
+
+    /* AI 對話框 */
+    .ai-panel { position: fixed; bottom: max(144px, calc(env(safe-area-inset-bottom) + 144px)); right: 16px; left: 16px; max-width: 400px; margin-left: auto; background: white; border-radius: 20px; border: 1.5px solid var(--border); box-shadow: 0 8px 40px rgba(124,58,237,0.18); z-index: 89; display: flex; flex-direction: column; overflow: hidden; height: 420px; animation: slideUp 0.25s ease; }
+    @keyframes slideUp { from { opacity:0; transform: translateY(20px); } to { opacity:1; transform: translateY(0); } }
+    .ai-panel-header { background: linear-gradient(135deg, #2D1B69, #4C1D95); padding: 14px 18px; display: flex; justify-content: space-between; align-items: center; }
+    .ai-panel-title { color: #F3EEFF; font-weight: 600; font-size: 14px; }
+    .ai-panel-close { background: none; border: none; color: #A78BCC; font-size: 20px; }
+    .ai-messages { flex: 1; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+    .msg { max-width: 85%; padding: 10px 14px; border-radius: 14px; font-size: 13px; line-height: 1.6; }
+    .msg.user { align-self: flex-end; background: linear-gradient(135deg, #7C3AED, #A855F7); color: white; border-bottom-right-radius: 4px; }
+    .msg.ai { align-self: flex-start; background: var(--purple-light); color: var(--text); border-bottom-left-radius: 4px; }
+    .msg.loading { color: var(--muted); font-style: italic; }
+    .ai-input-row { padding: 10px 14px; border-top: 1px solid var(--border); display: flex; gap: 8px; align-items: flex-end; }
+    .ai-input { flex: 1; padding: 10px 14px; border: 1.5px solid #DDD6FE; border-radius: 12px; font-size: 13px; outline: none; resize: none; max-height: 80px; min-height: 40px; line-height: 1.5; font-family: var(--font-body); }
+    .ai-send { width: 38px; height: 38px; border-radius: 50%; border: none; background: linear-gradient(135deg, #7C3AED, #EC4899); color: white; font-size: 16px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+    .ai-send:disabled { opacity: 0.4; }
+
+    /* Toast */
+    .toast { position: fixed; bottom: max(90px, calc(env(safe-area-inset-bottom) + 90px)); left: 50%; transform: translateX(-50%) translateY(80px); background: var(--dark); color: #F3EEFF; padding: 12px 20px; border-radius: 12px; font-size: 13px; font-family: var(--font-mono); transition: transform 0.3s ease; z-index: 200; white-space: nowrap; pointer-events: none; }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+
+    /* 底部導覽列 */
+    .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: white; border-top: 1px solid var(--border); display: flex; z-index: 80; padding-bottom: env(safe-area-inset-bottom); box-shadow: 0 -4px 20px rgba(45,27,105,0.08); }
+    .nav-btn { flex: 1; padding: 10px 4px 8px; background: none; border: none; display: flex; flex-direction: column; align-items: center; gap: 3px; color: var(--subtle); font-size: 10px; font-family: var(--font-mono); transition: color 0.2s; cursor: pointer; }
+    .nav-btn.active { color: var(--purple); }
+    .nav-icon { font-size: 20px; line-height: 1; display: block; background: none; filter: none; }
+
+    /* 培訓系統 */
+    .training-page { max-width: 960px; margin: 0 auto; padding: 20px 16px max(100px, calc(env(safe-area-inset-bottom) + 100px)); }
+    .training-hero { background: linear-gradient(135deg, #2D1B69, #6D28D9); border-radius: 20px; padding: 24px 20px; margin-bottom: 20px; color: white; }
+    .training-hero h2 { font-family: var(--font-display); font-size: 20px; margin-bottom: 6px; }
+    .training-hero p { font-size: 13px; color: #C4B5FD; line-height: 1.6; margin-bottom: 12px; }
+    .goal-item { display: flex; align-items: flex-start; gap: 8px; font-size: 13px; color: #E9D5FF; margin-bottom: 5px; line-height: 1.5; }
+    .week-card { background: white; border: 1.5px solid var(--border); border-radius: 16px; overflow: hidden; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(124,58,237,0.06); }
+    .week-header { padding: 15px 18px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; background: linear-gradient(135deg, #F5F3FF, #EDE9FE); }
+    .week-header-left { display: flex; align-items: center; gap: 10px; }
+    .week-badge { background: var(--purple); color: white; font-size: 11px; font-family: var(--font-mono); padding: 3px 10px; border-radius: 20px; white-space: nowrap; }
+    .week-title { font-family: var(--font-display); font-size: 14px; color: var(--text); font-weight: 600; }
+    .week-chevron { color: var(--purple); font-size: 14px; transition: transform 0.3s; }
+    .week-chevron.open { transform: rotate(180deg); }
+    .week-body { padding: 16px 18px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 12px; }
+    .week-goal { display: flex; align-items: flex-start; gap: 8px; font-size: 13px; color: var(--muted); line-height: 1.5; margin-bottom: 4px; }
+    .course-card { background: var(--purple-light); border-radius: 12px; padding: 14px; }
+    .course-title { font-size: 13px; font-weight: 600; color: var(--purple); margin-bottom: 8px; }
+    .course-item { font-size: 12px; color: var(--text); display: flex; align-items: flex-start; gap: 6px; line-height: 1.6; margin-bottom: 3px; }
+    .course-warn { font-size: 11px; color: #DC2626; background: #FEE2E2; border-radius: 8px; padding: 7px 10px; margin-top: 8px; line-height: 1.5; }
+    .step-card { background: #F9F7FF; border-left: 3px solid var(--purple); border-radius: 0 10px 10px 0; padding: 12px 14px; margin-bottom: 8px; }
+    .step-title { font-size: 12px; font-weight: 600; color: var(--purple); margin-bottom: 4px; }
+    .step-text { font-size: 12px; color: var(--muted); line-height: 1.6; }
+
+    /* 銷售演練頁面 */
+    .practice-page { max-width: 960px; margin: 0 auto; padding: 20px 16px max(100px, calc(env(safe-area-inset-bottom) + 100px)); }
+    .practice-hero { background: linear-gradient(135deg, #831843, #9D174D, #BE185D); border-radius: 20px; padding: 22px 20px; margin-bottom: 20px; color: white; }
+    .practice-hero h2 { font-family: var(--font-display); font-size: 20px; margin-bottom: 6px; }
+    .practice-hero p { font-size: 13px; color: #FBCFE8; line-height: 1.6; }
+    .scenario-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin-bottom: 20px; }
+    .scenario-btn { background: white; border: 2px solid var(--border); border-radius: 14px; padding: 14px 10px; display: flex; flex-direction: column; align-items: center; gap: 8px; cursor: pointer; transition: all 0.2s; }
+    .scenario-btn:active, .scenario-btn.selected { border-color: #EC4899; background: #FFF0F7; }
+    .scenario-icon { font-size: 26px; }
+    .scenario-label { font-size: 12px; color: var(--text); font-weight: 600; text-align: center; line-height: 1.4; }
+    .practice-chat { background: white; border: 1.5px solid var(--border); border-radius: 16px; overflow: hidden; box-shadow: 0 2px 8px rgba(124,58,237,0.06); }
+    .practice-chat-header { background: linear-gradient(135deg, #831843, #BE185D); padding: 14px 18px; display: flex; justify-content: space-between; align-items: center; }
+    .practice-chat-title { color: white; font-weight: 600; font-size: 14px; }
+    .btn-reset { background: rgba(255,255,255,0.2); border: none; color: white; border-radius: 8px; padding: 5px 12px; font-size: 12px; cursor: pointer; }
+    .practice-messages { height: 360px; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+    .practice-input-row { padding: 12px 14px; border-top: 1px solid var(--border); display: flex; gap: 8px; align-items: flex-end; }
+    .practice-input { flex: 1; padding: 10px 14px; border: 1.5px solid #FBCFE8; border-radius: 12px; font-size: 13px; outline: none; resize: none; max-height: 80px; min-height: 40px; line-height: 1.5; font-family: var(--font-body); }
+    .practice-send { width: 38px; height: 38px; border-radius: 50%; border: none; background: linear-gradient(135deg, #BE185D, #EC4899); color: white; font-size: 16px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+    .practice-send:disabled { opacity: 0.4; }
+    .pmsg { max-width: 85%; padding: 10px 14px; border-radius: 14px; font-size: 13px; line-height: 1.6; }
+    .pmsg.user { align-self: flex-end; background: linear-gradient(135deg, #BE185D, #EC4899); color: white; border-bottom-right-radius: 4px; }
+    .pmsg.ai { align-self: flex-start; background: #FFF0F7; color: var(--text); border-bottom-left-radius: 4px; border: 1px solid #FBCFE8; }
+    .pmsg.loading { color: var(--muted); font-style: italic; }
+    .tip-card { background: #FFFBEB; border: 1px solid #FCD34D; border-radius: 12px; padding: 12px 14px; font-size: 12px; color: #92400E; line-height: 1.6; margin-bottom: 12px; }
+  </style>
+</head>
+<body>
+<div id="app"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<script type="text/babel">
+const { useState, useMemo, useEffect, useRef, useCallback } = React;
+
+const CATEGORIES = ["全部", "自媒體課程", "銷售話術", "個人品牌", "限時動態打卡"];
+const TAGS = ["新人啟動", "產品知識", "零售循環", "個人定位", "限動經營", "成交技巧", "短影音", "AI工具"];
+const TYPE_ICONS = { link:"🔗", tool:"🛠️", learning:"📚", doc:"📄" };
+const AVATAR_COLORS = { J:["#F9A8D4","#9D174D"], M:["#C4B5FD","#4C1D95"], K:["#6EE7B7","#065F46"], Y:["#FCD34D","#92400E"] };
+
+const TRAINING_WEEKS = [
+  {
+    week:"01", title:"新人啟動營",
+    desc:"從0開始建立信心與成交動機",
+    goals:["Day1訪談","夢想與目標建立","成功案例拆解","Why比How重要"],
+    hasInterview: true,
+    steps:[], courses:[]
+  },
+  {
+    week:"02", title:"產品變現力",
+    desc:"學會分享產品而不是硬推銷",
+    goals:["FAB產品拆解","使用鋪墊技巧","BA紀錄建立","如何讓自己先愛上產品"],
+    steps:[], courses:[]
+  },
+  {
+    week:"03", title:"零售變現基礎課",
+    desc:"搞懂零售四大循環",
+    goals:["分享者思維","零售循環架構","新人鋪墊觀念","發文方向建立"],
+    steps:[], courses:[]
+  },
+  {
+    week:"04", title:"個人品牌養成班",
+    desc:"打造會吸粉的IG形象",
+    goals:["個人定位","IG首頁優化","9宮格打造","人設建立"],
+    steps:[], courses:[]
+  },
+  {
+    week:"05", title:"百萬社群吸睛術",
+    desc:"限動、貼文、版面一次搞懂",
+    goals:["製圖工具教學","限動經營技巧","三大價值輸出","精選動態規劃"],
+    steps:[], courses:[]
+  },
+  {
+    week:"06", title:"成交實戰課",
+    desc:"學會聊天、成交與客戶追蹤",
+    goals:["客人QA實戰","抗拒點破解","提問式銷售","售後追蹤系統"],
+    steps:[], courses:[]
+  },
+  {
+    week:"07", title:"短影音變現課",
+    desc:"從素人到會拍Reels",
+    goals:["影片定位","鏡頭表現力","剪輯技巧","AI文案應用","爆款影片公式"],
+    steps:[], courses:[]
+  },
+];
+
+// ── Day1 訪談表 Modal ──
+function InterviewModal({ onClose }) {
+  return (
+    <div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div className="modal" style={{maxWidth:520}}>
+        <div className="modal-header">
+          <span className="modal-title" style={{fontSize:17}}>📋 Day1 新人訪談表</span>
+          <button className="modal-close" onClick={onClose}>×</button>
+        </div>
+
+        <div style={{fontSize:12,color:'var(--muted)',background:'var(--purple-light)',borderRadius:10,padding:'10px 14px',lineHeight:1.7}}>
+          💡 操作提醒：以「訪談與關心」方式詢問，最理想是面對面，次之視訊。新人付款後 7 天內完成。
+        </div>
+
+        {[
+          {
+            q:"1. 目前工作狀態",
+            options:["想尋找創業機會，可全力投入","有正職，想增加額外收入","有正職，想轉換跑道","全職家管（寶媽），想增加收入","求學階段，想增加收入並累積競爭力","待業中","其他"]
+          },
+          { q:"2. 過去做過什麼工作？", text:"了解新人具備哪些經驗與技能，才可以因材施教。\n（工作職業、年資、專長興趣、休閒娛樂）" },
+          { q:"3. 如果努力經營可以獲得很好的收入，你希望10年後完成什麼夢想或目標？", text:"讓新人沒有限制地說說夢想" },
+          {
+            q:"4. 12個月後希望每月淨利是多少？",
+            options:["A. 3,000–5,000元（每天30–60分鐘）","B. 30,000–50,000元","C. 10萬元","D. 20萬元以上"]
+          },
+          {
+            q:"5. 透過賺到這個數字，真正想達成的夢想或解決的問題？",
+            options:["買房給爸媽","買房和老公搬出婆家","買車","給小孩更好的教育與生活","自己賺錢不當伸手牌","維持學習與競爭力","解決家裡負債","靠自己買房買車","學生：提早累積競爭力","其他動機"]
+          },
+          {
+            q:"6. 為了達成目標……",
+            text:"1. 你願意每天花幾個小時經營？\n2. 遇到挫折你會怎麼面對？\n3. 達到目標前，你願意犧牲多少小確幸？"
+          },
+          { q:"7. 是否願意實踐自己立下的承諾來完成目標？", text:"「你是想要，還是一定要？」\n\n宣示人：＿＿＿＿＿＿" },
+        ].map((item, i)=>(
+          <div key={i} style={{borderRadius:12,border:'1.5px solid var(--border)',overflow:'hidden'}}>
+            <div style={{background:'linear-gradient(135deg,#F5F3FF,#EDE9FE)',padding:'10px 14px',fontSize:13,fontWeight:600,color:'var(--purple)'}}>
+              {item.q}
+            </div>
+            <div style={{padding:'10px 14px'}}>
+              {item.options && item.options.map((o,oi)=>(
+                <div key={oi} style={{display:'flex',alignItems:'flex-start',gap:8,fontSize:13,color:'var(--text)',marginBottom:5,lineHeight:1.5}}>
+                  <span style={{color:'var(--purple)',flexShrink:0}}>□</span><span>{o}</span>
+                </div>
+              ))}
+              {item.text && <div style={{fontSize:13,color:'var(--muted)',lineHeight:1.8,whiteSpace:'pre-line'}}>{item.text}</div>}
+            </div>
+          </div>
+        ))}
+
+        <div style={{fontSize:12,color:'#DC2626',background:'#FEE2E2',borderRadius:10,padding:'10px 14px',lineHeight:1.7}}>
+          ⚠️ 在婕樂纖沒有不能完成的目標，只有不願意付出的努力。付出對等的努力可以獲得比原本高 3–10 倍的成就。
+        </div>
+
+        <button onClick={onClose} style={{background:'linear-gradient(135deg,#7C3AED,#EC4899)',color:'white',border:'none',borderRadius:12,padding:12,fontSize:14,fontWeight:600}}>關閉</button>
+      </div>
+    </div>
+  );
+}
+
+const SCENARIOS = [
+  { id:"price", icon:"💰", label:"嫌貴抗拒", prompt:"你是一個對產品有興趣但覺得太貴的潛在客人，用台灣口語說話，會提出價格疑慮。等對方說話後再回應。先說：「這個好像有點貴耶，有比較便宜的嗎？」" },
+  { id:"effect", icon:"🤔", label:"懷疑效果", prompt:"你是一個半信半疑的潛在客人，懷疑產品效果，用台灣口語說話。先說：「這個真的有效嗎？感覺都是噱頭？」" },
+  { id:"think", icon:"⏰", label:"考慮看看", prompt:"你是一個猶豫不決的潛在客人，想拖延決定，用台灣口語說話。先說：「嗯⋯我再想想看好了，現在比較忙。」" },
+  { id:"friend", icon:"👯", label:"問朋友意見", prompt:"你是一個需要問別人意見才能決定的潛在客人，用台灣口語說話。先說：「我想說問一下我朋友，她比較懂這個。」" },
+  { id:"compare", icon:"🔍", label:"比較其他品牌", prompt:"你是一個正在貨比三家的潛在客人，用台灣口語說話。先說：「我在看其他牌子，你們跟 XX 比有什麼差別？」" },
+  { id:"busy", icon:"😅", label:"最近沒時間", prompt:"你是一個以忙碌為藉口的潛在客人，用台灣口語說話。先說：「最近真的很忙，可能沒時間弄這個⋯」" },
+];
+
+function useLocalStorage(key, init) {
+  const [val, setVal] = useState(() => { try { const s = localStorage.getItem(key); return s ? JSON.parse(s) : init; } catch { return init; } });
+  useEffect(() => { try { localStorage.setItem(key, JSON.stringify(val)); } catch {} }, [key, val]);
+  return [val, setVal];
+}
+
+async function callAI(messages) {
+  try {
+    const encoded = encodeURIComponent(JSON.stringify(messages));
+    const res = await fetch(`https://text.pollinations.ai/${encoded}`);
+    return await res.text();
+  } catch { return null; }
+}
+
+function Toast({ msg }) { return <div className={`toast ${msg?'show':''}`}>{msg||' '}</div>; }
+function Chip({ label, active, onClick }) { return <button className={`chip ${active?'active':''}`} onClick={onClick}>{label}</button>; }
+
+// ── 打卡 ──
+function CheckinCard() {
+  const today = new Date().toISOString().slice(0,10);
+  const [data, setData] = useLocalStorage('checkin-data', { streak:0, lastDate:'', history:[] });
+  const alreadyDone = data.lastDate === today;
+  const last7 = Array.from({length:7},(_,i)=>{ const d=new Date(); d.setDate(d.getDate()-6+i); return d.toISOString().slice(0,10); });
+  const doCheckin = () => {
+    if (alreadyDone) return;
+    const yesterday = new Date(); yesterday.setDate(yesterday.getDate()-1);
+    const yStr = yesterday.toISOString().slice(0,10);
+    const newStreak = data.lastDate === yStr ? data.streak+1 : 1;
+    setData({ streak:newStreak, lastDate:today, history:[...data.history, today] });
+  };
+  return (
+    <div className="checkin-card">
+      <div className="checkin-title">📸 每日限時動態打卡</div>
+      <div className="checkin-desc">堅持每天發限時動態，養成自媒體發文習慣！</div>
+      <div className="checkin-streak"><span className="streak-num">{data.streak}</span><span className="streak-label">天連續打卡 🔥</span></div>
+      <div className="checkin-dots">
+        {last7.map(d=><div key={d} className={`dot ${data.history.includes(d)?'done':''}`}>{data.history.includes(d)?'✓':''}</div>)}
+        <span style={{fontSize:'11px',color:'#C4B5FD',alignSelf:'center',marginLeft:4}}>過去7天</span>
+      </div>
+      <button className="btn-checkin" onClick={doCheckin} disabled={alreadyDone}>{alreadyDone?'✅ 今天已打卡！':'立即打卡 ✨'}</button>
+    </div>
+  );
+}
+
+// ── AI 助手 ──
+function AIPanel({ onClose }) {
+  const [msgs, setMsgs] = useState([{role:'ai', text:'嗨！我是 Million 陪跑班的 AI 助手 ✨ 有任何問題都可以問我！'}]);
+  const [input, setInput] = useState('');
+  const [loading, setLoading] = useState(false);
+  const bottomRef = useRef(null);
+  useEffect(()=>{ bottomRef.current?.scrollIntoView({behavior:'smooth'}); },[msgs]);
+  const send = async () => {
+    if (!input.trim()||loading) return;
+    const userMsg = input.trim(); setInput(''); setLoading(true);
+    setMsgs(m=>[...m,{role:'user',text:userMsg}]);
+    const history = msgs.map(m=>({role:m.role==='user'?'user':'assistant',content:m.text}));
+    const allMsgs = [{role:'system',content:'你是 Million 陪跑班的 AI 助手。用繁體中文回答，語氣親切活潑，可以回答任何問題。回答盡量簡潔有力。'},...history,{role:'user',content:userMsg}];
+    const reply = await callAI(allMsgs);
+    setMsgs(m=>[...m,{role:'ai',text:reply||'抱歉，請稍後再試。'}]);
+    setLoading(false);
+  };
+  const onKey = e=>{ if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();} };
+  return (
+    <div className="ai-panel">
+      <div className="ai-panel-header"><div className="ai-panel-title">✨ AI 助手</div><button className="ai-panel-close" onClick={onClose}>×</button></div>
+      <div className="ai-messages">
+        {msgs.map((m,i)=><div key={i} className={`msg ${m.role}`}>{m.text}</div>)}
+        {loading&&<div className="msg ai loading">思考中...</div>}
+        <div ref={bottomRef}/>
+      </div>
+      <div className="ai-input-row">
+        <textarea className="ai-input" value={input} rows={1} onChange={e=>setInput(e.target.value)} onKeyDown={onKey} placeholder="輸入問題..."/>
+        <button className="ai-send" onClick={send} disabled={!input.trim()||loading}>➤</button>
+      </div>
+    </div>
+  );
+}
+
+// ── 銷售話術演練頁面 ──
+function PracticePage() {
+  const [selected, setSelected] = useState(null);
+  const [msgs, setMsgs] = useState([]);
+  const [input, setInput] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [started, setStarted] = useState(false);
+  const bottomRef = useRef(null);
+  useEffect(()=>{ bottomRef.current?.scrollIntoView({behavior:'smooth'}); },[msgs]);
+
+  const startScenario = async (s) => {
+    setSelected(s); setStarted(true); setMsgs([]); setLoading(true);
+    const initMsgs = [{role:'system',content:`${s.prompt} 只扮演客人，不要解釋自己在做什麼。用繁體中文、台灣口語對話。`},{role:'user',content:'開始'}];
+    const reply = await callAI(initMsgs);
+    setMsgs([{role:'ai',text:reply||'你好！'}]);
+    setLoading(false);
+  };
+
+  const send = async () => {
+    if (!input.trim()||loading||!selected) return;
+    const userMsg = input.trim(); setInput(''); setLoading(true);
+    const newMsgs = [...msgs,{role:'user',text:userMsg}];
+    setMsgs(newMsgs);
+    const history = newMsgs.map(m=>({role:m.role==='user'?'user':'assistant',content:m.text}));
+    const allMsgs = [{role:'system',content:`${selected.prompt} 只扮演客人，繼續對話，用繁體中文台灣口語。對方說得好就稍微鬆動，說得不好就繼續抗拒。`},...history];
+    const reply = await callAI(allMsgs);
+    setMsgs(m=>[...m,{role:'ai',text:reply||'嗯⋯'}]);
+    setLoading(false);
+  };
+
+  const getFeedback = async () => {
+    if (msgs.length < 2) return;
+    setLoading(true);
+    const conv = msgs.map(m=>`${m.role==='user'?'銷售員':'客人'}：${m.text}`).join('\n');
+    const allMsgs = [{role:'system',content:'你是銷售培訓教練，用繁體中文給出具體、鼓勵性的回饋。'},{role:'user',content:`請分析這段銷售對話，給出優點和改進建議：\n${conv}`}];
+    const reply = await callAI(allMsgs);
+    setMsgs(m=>[...m,{role:'ai',text:`📊 教練點評：\n${reply||'繼續加油！'}`}]);
+    setLoading(false);
+  };
+
+  const reset = () => { setSelected(null); setMsgs([]); setStarted(false); setInput(''); };
+  const onKey = e=>{ if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();} };
+
+  return (
+    <div className="practice-page">
+      <div className="practice-hero">
+        <h2>💬 銷售話術 AI 演練</h2>
+        <p>選擇客人類型，跟 AI 客人實際對話練習！練完可以請 AI 教練給你回饋。</p>
+      </div>
+
+      <div className="tip-card">💡 練習方式：選一種情境 → 跟 AI 客人對話 → 點「教練點評」看改進建議</div>
+
+      <div className="scenario-grid">
+        {SCENARIOS.map(s=>(
+          <button key={s.id} className={`scenario-btn ${selected?.id===s.id?'selected':''}`} onClick={()=>startScenario(s)}>
+            <span className="scenario-icon">{s.icon}</span>
+            <span className="scenario-label">{s.label}</span>
+          </button>
+        ))}
+      </div>
+
+      {started && (
+        <div className="practice-chat">
+          <div className="practice-chat-header">
+            <div className="practice-chat-title">{selected?.icon} {selected?.label} 情境演練</div>
+            <div style={{display:'flex',gap:8}}>
+              <button className="btn-reset" onClick={getFeedback} disabled={loading||msgs.length<2}>📊 教練點評</button>
+              <button className="btn-reset" onClick={reset}>重選</button>
+            </div>
+          </div>
+          <div className="practice-messages">
+            <div className="pmsg ai">我是你的 AI 客人，開始練習吧！你先開口 👇</div>
+            {msgs.map((m,i)=><div key={i} className={`pmsg ${m.role}`} style={{whiteSpace:'pre-line'}}>{m.text}</div>)}
+            {loading&&<div className="pmsg ai loading">輸入中...</div>}
+            <div ref={bottomRef}/>
+          </div>
+          <div className="practice-input-row">
+            <textarea className="practice-input" value={input} rows={1} onChange={e=>setInput(e.target.value)} onKeyDown={onKey} placeholder="輸入你的銷售話術..."/>
+            <button className="practice-send" onClick={send} disabled={!input.trim()||loading}>➤</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── 培訓系統頁面 ──
+function TrainingPage() {
+  const [open, setOpen] = useState(null);
+  const [showInterview, setShowInterview] = useState(false);
+  return (
+    <div className="training-page">
+      <div className="training-hero">
+        <h2>👑 百萬新人培訓系統</h2>
+        <p>30 天內迅速開 3-10 單，建立個人品牌，事半功倍新人變老手</p>
+        {["30 天內迅速開 3-10 單","建立個人品牌","事半功倍新人變老手"].map((g,i)=>(
+          <div key={i} className="goal-item"><span>🎯</span><span>{g}</span></div>
+        ))}
+      </div>
+      {TRAINING_WEEKS.map((w,wi)=>(
+        <div key={wi} className="week-card">
+          <div className="week-header" onClick={()=>setOpen(open===wi?null:wi)}>
+            <div className="week-header-left">
+              <span className="week-badge">{w.week}</span>
+              <div>
+                <div className="week-title">{w.title}</div>
+                <div style={{fontSize:11,color:'var(--muted)',marginTop:2}}>{w.desc}</div>
+              </div>
+            </div>
+            <span className={`week-chevron ${open===wi?'open':''}`}>▼</span>
+          </div>
+          {open===wi&&(
+            <div className="week-body">
+              <div>
+                <div style={{fontSize:12,fontWeight:600,color:'var(--purple)',marginBottom:8,fontFamily:'var(--font-mono)'}}>📋 課程內容</div>
+                {w.goals.map((g,i)=><div key={i} className="week-goal"><span>☑️</span><span>{g}</span></div>)}
+              </div>
+              {w.hasInterview&&(
+                <button onClick={()=>setShowInterview(true)} style={{
+                  background:'linear-gradient(135deg,#7C3AED,#EC4899)',
+                  color:'white',border:'none',borderRadius:12,
+                  padding:'12px 16px',fontSize:13,fontWeight:600,
+                  display:'flex',alignItems:'center',gap:8,width:'100%',justifyContent:'center'
+                }}>
+                  📋 查看 Day1 新人訪談表
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      ))}
+      {showInterview&&<InterviewModal onClose={()=>setShowInterview(false)}/>}
+    </div>
+  );
+}
+
+// ── Modal ──
+function Modal({ open, onClose, onSave, initial }) {
+  const blank = { title:'', desc:'', category:'自媒體課程', tags:[], url:'', type:'link' };
+  const [form, setForm] = useState(blank);
+  useEffect(()=>{ if(open) setForm(initial?{...initial}:blank); },[open]);
+  if (!open) return null;
+  const toggle = t=>setForm(f=>({...f,tags:f.tags.includes(t)?f.tags.filter(x=>x!==t):[...f.tags,t]}));
+  const ready = form.title.trim().length>0;
+  return (
+    <div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div className="modal">
+        <div className="modal-header"><span className="modal-title">{initial?'編輯資源':'新增資源'}</span><button className="modal-close" onClick={onClose}>×</button></div>
+        <div className="field"><label>標題</label><input value={form.title} onChange={e=>setForm(f=>({...f,title:e.target.value}))} placeholder="資源名稱..."/></div>
+        <div className="field"><label>說明</label><textarea value={form.desc} onChange={e=>setForm(f=>({...f,desc:e.target.value}))} placeholder="簡短描述..."/></div>
+        <div className="field"><label>連結（選填）</label><input value={form.url} onChange={e=>setForm(f=>({...f,url:e.target.value}))} placeholder="https://..."/></div>
+        <div className="field"><label>分類</label><div className="modal-cats">{CATEGORIES.slice(1).map(c=><Chip key={c} label={c} active={form.category===c} onClick={()=>setForm(f=>({...f,category:c}))}/>)}</div></div>
+        <div className="field"><label>標籤</label><div className="modal-tags">{TAGS.map(t=><Chip key={t} label={`#${t}`} active={form.tags.includes(t)} onClick={()=>toggle(t)}/>)}</div></div>
+        <div className="modal-actions">
+          <button className="btn-cancel" onClick={onClose}>取消</button>
+          <button className={`btn-save ${ready?'ready':'disabled'}`} onClick={()=>{if(ready){onSave(form);onClose();}}}>儲存資源</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Resource Card ──
+function Card({ r, onLike, onSave, onEdit }) {
+  const [bg,fg] = AVATAR_COLORS[r.avatar]||["#DDD6FE","#4C1D95"];
+  return (
+    <div className="card">
+      <div className="card-header"><div className="card-meta"><span className="type-icon">{TYPE_ICONS[r.type]}</span><span className="category-badge">{r.category}</span></div><button className="edit-btn" onClick={()=>onEdit(r)}>✏️</button></div>
+      <div><div className="card-title">{r.title}</div><div className="card-desc">{r.desc}</div></div>
+      <div className="card-tags">{r.tags.map(t=><span key={t} className="tag-pill">#{t}</span>)}</div>
+      <div className="card-footer">
+        <div className="author"><div className="avatar" style={{background:bg,color:fg}}>{r.avatar}</div><span className="author-name">{r.author} · {r.date?.slice(5)}</span></div>
+        <div className="card-actions">
+          {r.url&&<a href={r.url} target="_blank" rel="noreferrer" className="link-btn">開啟</a>}
+          <button className={`like-btn ${r.liked?'liked':''}`} onClick={()=>onLike(r.id)}>{r.liked?'♥':'♡'} {r.likes}</button>
+          <button className={`save-btn ${r.saved?'saved':''}`} onClick={()=>onSave(r.id)}>{r.saved?'★':'☆'}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── App ──
+function App() {
+  const [page, setPage] = useState('home');
+  const [resources, setResources] = useState([]);
+  const [fbReady, setFbReady] = useState(!!window.__db);
+  const [category, setCategory] = useState("全部");
+  const [search, setSearch] = useState("");
+  const [activeTag, setActiveTag] = useState("");
+  const [showSaved, setShowSaved] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editTarget, setEditTarget] = useState(null);
+  const [toast, setToast] = useState("");
+  const [aiOpen, setAiOpen] = useState(false);
+
+  useEffect(()=>{ if(window.__db){setFbReady(true);return;} const h=()=>setFbReady(true); window.addEventListener('firebase-ready',h); return()=>window.removeEventListener('firebase-ready',h); },[]);
+  useEffect(()=>{
+    if(!fbReady) return;
+    const {collection,onSnapshot,query,orderBy}=window.__firebase;
+    const q=query(collection(window.__db,'resources'),orderBy('createdAt','desc'));
+    const unsub=onSnapshot(q,snap=>{setResources(snap.docs.map(d=>({id:d.id,...d.data()})));},()=>{});
+    return unsub;
+  },[fbReady]);
+
+  const showToast = useCallback(msg=>{ setToast(msg); setTimeout(()=>setToast(""),2000); },[]);
+  const filtered = useMemo(()=>resources.filter(r=>{
+    if(category!=="全部"&&r.category!==category) return false;
+    if(showSaved&&!r.saved) return false;
+    if(activeTag&&!r.tags?.includes(activeTag)) return false;
+    if(search&&!r.title?.includes(search)&&!r.desc?.includes(search)) return false;
+    return true;
+  }),[resources,category,search,activeTag,showSaved]);
+
+  const handleLike = id=>{ const r=resources.find(r=>r.id===id); if(!r) return; const {doc,updateDoc}=window.__firebase; updateDoc(doc(window.__db,'resources',id),{liked:!r.liked,likes:r.liked?r.likes-1:r.likes+1}); };
+  const handleSave = id=>{ const r=resources.find(r=>r.id===id); if(!r) return; const {doc,updateDoc}=window.__firebase; updateDoc(doc(window.__db,'resources',id),{saved:!r.saved}); showToast(r.saved?'已取消收藏':'已加入收藏 ★'); };
+  const handleEdit = r=>{ setEditTarget(r); setModalOpen(true); };
+  const handleSaveResource = form=>{ const {collection,addDoc,doc,updateDoc,serverTimestamp}=window.__firebase; if(editTarget){updateDoc(doc(window.__db,'resources',editTarget.id),{...form});showToast('已更新 ✓');}else{addDoc(collection(window.__db,'resources'),{...form,author:'You',avatar:'Y',likes:0,saved:false,liked:false,date:new Date().toISOString().slice(0,10),type:form.type||'link',createdAt:serverTimestamp()});showToast('已新增資源 ✓');} };
+
+  const showCheckin = category==="全部"||category==="限時動態打卡";
+
+  return (
+    <>
+      {/* Header — 只在 home 頁顯示 */}
+      {page==='home'&&(
+        <header className="header">
+          <div className="header-inner">
+            <div className="header-top">
+              <div className="header-title"><h1>Million 陪跑班</h1><p>{resources.length} 個資源 · {resources.filter(r=>r.saved).length} 個收藏</p></div>
+              <button className="btn-add" onClick={()=>{setEditTarget(null);setModalOpen(true);}}>＋ 新增</button>
+            </div>
+            <div className="search-wrap"><span className="search-icon">🔍</span><input className="search-input" value={search} onChange={e=>setSearch(e.target.value)} placeholder="搜尋資源..."/></div>
+            <div className="tabs">
+              {CATEGORIES.map(c=><button key={c} className={`tab ${category===c&&!showSaved?'active':''}`} onClick={()=>{setCategory(c);setShowSaved(false);}}>{c}</button>)}
+              <div className="tab-spacer"/>
+              <button className={`tab saved ${showSaved?'active':''}`} onClick={()=>setShowSaved(s=>!s)}>★ 收藏</button>
+            </div>
+          </div>
+        </header>
+      )}
+
+      {/* 簡單頁首 for 其他頁 */}
+      {page!=='home'&&(
+        <div style={{background:'var(--header-bg)',padding:`max(28px,env(safe-area-inset-top)) 20px 16px`,position:'sticky',top:0,zIndex:50}}>
+          <div style={{color:'#F3EEFF',fontFamily:'var(--font-display)',fontSize:20,fontWeight:700}}>
+            {page==='training'?'👑 百萬新人培訓系統':'💬 銷售話術演練'}
+          </div>
+        </div>
+      )}
+
+      {/* 內容 */}
+      {page==='home'&&(
+        <main className="main">
+          <div className="tag-strip"><Chip label="全部" active={!activeTag} onClick={()=>setActiveTag("")}/>{TAGS.map(t=><Chip key={t} label={`#${t}`} active={activeTag===t} onClick={()=>setActiveTag(activeTag===t?"":t)}/>)}</div>
+          <div className="count">顯示 {filtered.length} 個結果{search&&` · 「${search}」`}</div>
+          {showCheckin&&<div style={{marginBottom:14}}><CheckinCard/></div>}
+          {filtered.length>0?<div className="grid">{filtered.map(r=><Card key={r.id} r={r} onLike={handleLike} onSave={handleSave} onEdit={handleEdit}/>)}</div>:<div className="empty"><div className="empty-icon">🗂️</div><p>找不到符合的資源</p></div>}
+        </main>
+      )}
+      {page==='training'&&<TrainingPage/>}
+      {page==='practice'&&<PracticePage/>}
+
+      {/* AI 浮動按鈕（只在 home 顯示）*/}
+      {page==='home'&&<button className="ai-fab" onClick={()=>setAiOpen(o=>!o)}>{aiOpen?'×':'✨'}</button>}
+      {page==='home'&&aiOpen&&<AIPanel onClose={()=>setAiOpen(false)}/>}
+
+      {/* 底部導覽列 */}
+      <nav className="bottom-nav">
+        <button className={`nav-btn ${page==='home'?'active':''}`} onClick={()=>setPage('home')}><span className="nav-icon">🏠</span>資源庫</button>
+        <button className={`nav-btn ${page==='training'?'active':''}`} onClick={()=>setPage('training')}><span className="nav-icon">📖</span>培訓系統</button>
+        <button className={`nav-btn ${page==='practice'?'active':''}`} onClick={()=>setPage('practice')}><span className="nav-icon">🎯</span>話術演練</button>
+      </nav>
+
+      <Modal open={modalOpen} onClose={()=>{setModalOpen(false);setEditTarget(null);}} onSave={handleSaveResource} initial={editTarget}/>
+      <Toast msg={toast}/>
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('app')).render(<App/>);
+</script>
+<script>if('serviceWorker'in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('/sw.js').catch(()=>{});});}</script>
+</body>
+</html>
